@@ -35,6 +35,6 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	AActor* CurrentTarget{nullptr};
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Cordy")
 	FName ColliderTag{"Targeting"};
 };
