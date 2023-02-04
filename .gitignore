@@ -74,9 +74,6 @@ Plugins/*/Intermediate/*
 # Cache files for the editor to use
 DerivedDataCache/*
 
-# StarterContent, which seems to be generated when you open the project
-Content/StarterContent/*
-
 # Builds
 Output/*
 
