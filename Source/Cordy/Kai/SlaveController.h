@@ -21,6 +21,9 @@ public:
 protected:
 	void StartTasks();
 	void StartRandomMovement();
+
+	UFUNCTION()
+	void HandleCaptured(ABaseCreature* Creature);
 	
 	FTimerHandle MovementTimer;
 };

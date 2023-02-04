@@ -40,6 +40,12 @@ void ABaseCreature::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAxis("Turn", this, &ABaseCreature::Turn);
 }
 
+void ABaseCreature::SetCaptured()
+{
+	bIsCaptured = true;
+	WasCaptured.Broadcast(this);
+}
+
 void ABaseCreature::MoveForward(float Value)
 {
 	if (Value != 0.0f)
