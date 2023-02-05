@@ -45,6 +45,38 @@ void ABaseCreature::SetCaptured()
 	WasCaptured.Broadcast(this);
 }
 
+float ABaseCreature::DoWork(AActionLocation* Location)
+{
+	return Location->DoWork();
+}
+
+bool ABaseCreature::Pickup(AActionLocation* Location)
+{
+	if(!Location->Pickup())
+	{
+		return false;
+	}
+	ResourcesCarried.Add(Location->GetResourceType());
+	
+	return true;
+}
+
+bool ABaseCreature::Drop(AActionLocation* Location)
+{
+	if(!ResourcesCarried.Contains(Location->GetResourceType()))
+	{
+		return false;
+	}
+
+	if(!Location->Drop())
+	{
+		return false;
+	}
+
+	ResourcesCarried.Remove(Location->GetResourceType());
+	return true;
+}
+
 void ABaseCreature::MoveForward(float Value)
 {
 	if (Value != 0.0f)

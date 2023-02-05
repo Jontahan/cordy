@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseCreature.h"
 #include "GameFramework/Actor.h"
 #include "Spores.generated.h"
 
@@ -13,7 +14,7 @@ class CORDY_API ASpores : public AActor
 	
 public:	
 	ASpores();
-
+	
 protected:
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 

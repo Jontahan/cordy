@@ -33,19 +33,106 @@ void ASlaveController::OnPossess(APawn* InPawn)
 
 void ASlaveController::OnUnPossess()
 {
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+	TimerManager.ClearTimer(TaskTimer);
+	StopMovement();
+	
 	Super::OnUnPossess();
+}
+
+void ASlaveController::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)
+{
+	Super::OnMoveCompleted(RequestID, Result);
+
+	ABaseCreature* Creature = Cast<ABaseCreature>(GetPawn());
+	if(!Creature || !Creature->IsCaptured())
+	{
+		return;
+	}
+	
+	if(CurrentLocation)
+	{
+		DoWork(CurrentLocation);
+	}
 }
 
 void ASlaveController::StartTasks()
 {
-	//TODO:
-	//Chose the "Next" Task
-	//Go to the task location
-	//"Do" the task(Chop wood, Repair bridge, pickup item, drop item, etc.)
-	//Start timer for Task duration, with modifiers for species?
-	//After duration: Tell the Action we did it, allowing it to do whatever the action does(Spawn wood, repair bridge, increment/decrement resources, et.c)
-	//Run "StartTask" again for the next Task in the list.
-	//Loop.
+	if(GetWorld()->GetTimerManager().IsTimerActive(TaskTimer))
+	{
+		return;
+	}
+	
+	ABaseCreature* Creature = Cast<ABaseCreature>(GetPawn());
+	if(!Creature)
+	{
+		return;
+	}
+
+	if(Creature->Actions.Num() == 0)
+	{
+		return;
+	}
+	
+	if(Creature->CurrentActionIndex >= Creature->Actions.Num())
+	{
+		Creature->CurrentActionIndex = 0;
+	}
+	const FActionReplay& Replay = Creature->Actions[Creature->CurrentActionIndex];
+	++Creature->CurrentActionIndex;
+
+	AActionLocation* Loc = Replay.Location;
+	CurrentLocation = Loc;
+	if(!IsValid(Loc))
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			StartTasks();
+		});
+		return;
+	}
+
+	EPathFollowingRequestResult::Type Result;
+
+	switch(Replay.Action)
+	{
+	case EActionType::Work:
+		if(!Loc->CanDoWork())
+		{
+			GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+			{
+				StartTasks();
+			});
+			break;
+		}
+		Result = MoveTo(Loc->GetActorLocation(), 500.0f);
+		if(Result != EPathFollowingRequestResult::RequestSuccessful && Result != EPathFollowingRequestResult::AlreadyAtGoal)
+		{
+			GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+			{
+				StartTasks();
+			});
+		}
+		
+		break;
+		
+	case EActionType::Pickup:
+		Creature->Pickup(Loc);
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			StartTasks();
+		});
+		break;
+		
+	case EActionType::Drop:
+		Creature->Drop(Loc);
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			StartTasks();
+		});
+		break;
+		
+	}
 }
 
 void ASlaveController::StartRandomMovement()
@@ -60,17 +147,7 @@ void ASlaveController::StartRandomMovement()
 	const float y = r * sin(theta);
 	FVector Target = Creature->GetSpawnLocation() + FVector(x, y, 0.0f);
 
-	//Try to find ground
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(Creature);
-	if(GetWorld()->LineTraceSingleByProfile(Hit, {Target.X, Target.Y, Target.Z + 1000.0f},
-		Target, Creature->GetCapsuleComponent()->GetCollisionProfileName(), Params))
-	{
-		Target = Hit.Location;
-	}
-	
-	const EPathFollowingRequestResult::Type Result = MoveToLocation(Target, -1, true, true, true);
+	EPathFollowingRequestResult::Type Result = MoveTo(Target, -1.0f);
 	
 	float Time = 0.0f;
 	if((int)Result != (int)EPathFollowingResult::Success)
@@ -85,9 +162,44 @@ void ASlaveController::StartRandomMovement()
 	GetWorld()->GetTimerManager().SetTimer(MovementTimer, this, &ASlaveController::StartRandomMovement, Time, false);
 }
 
+float ASlaveController::DoWork(AActionLocation* Location)
+{
+	ABaseCreature* Creature = Cast<ABaseCreature>(GetPawn());
+	float WorkDuration = Creature->DoWork(Location);
+	GetWorld()->GetTimerManager().SetTimer(TaskTimer, [this, Location, Creature]()
+	{
+		Location->DidWork();
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			StartTasks();
+		});
+	}, WorkDuration, false);
+
+	return WorkDuration;
+}
+
+EPathFollowingRequestResult::Type ASlaveController::MoveTo(FVector Location, float Radius)
+{
+	ABaseCreature* Creature = Cast<ABaseCreature>(GetPawn());
+	
+	//Try to find ground
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(Creature);
+	if(GetWorld()->LineTraceSingleByProfile(Hit, {Location.X, Location.Y, Location.Z + 1000.0f},
+		{Location.X, Location.Y, Location.Z - 500.0f}, Creature->GetCapsuleComponent()->GetCollisionProfileName(), Params))
+	{
+		Location = Hit.Location;
+	}
+	
+	return MoveToLocation(Location, Radius, true, true, true);
+}
+
 void ASlaveController::HandleCaptured(ABaseCreature* Creature)
 {
 	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
 	TimerManager.ClearTimer(MovementTimer);
 	StopMovement();
+
+	StartTasks();
 }
