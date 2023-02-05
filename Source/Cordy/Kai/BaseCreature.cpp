@@ -3,7 +3,6 @@
 
 #include "Cordy/Kai/BaseCreature.h"
 
-#include "SAdvancedRotationInputBox.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
