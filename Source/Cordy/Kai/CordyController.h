@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActionLocation.h"
 #include "GameFramework/PlayerController.h"
 #include "CordyController.generated.h"
 
@@ -25,10 +26,12 @@ public:
 	
 protected:
 	void TrySwitch();
+	void TryInteract();
 	void SwitchTo(ABaseCreature* Creature);
+	void DoWork(AActionLocation* Location);
 	
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 
-	bool bIsSwitching{false};
+	bool bIsDoingAction{false};
 };

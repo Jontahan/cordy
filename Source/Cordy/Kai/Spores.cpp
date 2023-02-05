@@ -16,11 +16,20 @@ void ASpores::NotifyActorBeginOverlap(AActor* OtherActor)
 	Super::NotifyActorBeginOverlap(OtherActor);
 
 	ABaseCreature* Creature = Cast<ABaseCreature>(OtherActor);
-	if(!Creature || Creature->IsCaptured())
+	if(!Creature || Creature == GetOwner())
 	{
 		return;
 	}
 
-	Creature->SetCaptured();
+	ABaseCreature* Original = Cast<ABaseCreature>(GetOwner());
+	if(Original)
+	{
+		Creature->Actions = Original->Actions;
+	}
+	
+	if(!Creature->IsCaptured())
+	{
+		Creature->SetCaptured();
+	}
 }
 

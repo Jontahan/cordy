@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActionLocation.h"
 #include "GameFramework/Character.h"
 #include "BaseCreature.generated.h"
 
@@ -31,6 +32,10 @@ public:
 	void SetCaptured();
 	bool IsCaptured() const { return bIsCaptured; }
 
+	float DoWork(AActionLocation* Location);
+	bool Pickup(AActionLocation* Location);
+	bool Drop(AActionLocation* Location);
+
 	FVector GetSpawnLocation() const { return SpawnLocation; }
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Cordy")
@@ -45,6 +50,15 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FWasCaptured WasCaptured;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<FActionReplay> Actions;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int CurrentActionIndex;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<EResourceType> ResourcesCarried;
+	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cordy")
 	bool bIsCaptured{true};
