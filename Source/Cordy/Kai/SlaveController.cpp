@@ -73,7 +73,7 @@ void ASlaveController::StartRandomMovement()
 	const EPathFollowingRequestResult::Type Result = MoveToLocation(Target, -1, true, true, true);
 	
 	float Time = 0.0f;
-	if(Result != EPathFollowingResult::Success)
+	if((int)Result != (int)EPathFollowingResult::Success)
 	{
 		Time = FMath::RandRange(0.1f, 2.0f);
 	}
